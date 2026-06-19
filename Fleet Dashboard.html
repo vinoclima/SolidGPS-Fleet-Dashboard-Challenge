@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Fleet Dashboard — SolidGPS</title>
+
+    <!-- Leaflet CSS — loaded from CDN, no local files needed -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+    <style>
+        /* ── Reset & base ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            font-size: 15px;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: #0f172a;
+            color: #fff;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 1.3rem; font-weight: 600; letter-spacing: -0.3px; }
+        .header .meta { font-size: 13px; color: #94a3b8; }
+
+        /* ── Main layout ── */
+        .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+        /* ── Summary cards ── */
+        .summary-grid {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        .summary-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 1rem 1.5rem;
+            min-width: 130px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.07);
+        }
+        .summary-count { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .summary-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+        /* ── Map ── */
+        .map-wrap {
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,.07);
+            margin-bottom: 1.5rem;
+        }
+        #map { height: 480px; width: 100%; }
+
+        /* ── Device table ── */
+        .table-wrap {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.07);
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+        }
+        .table-header {
+            padding: .85rem 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            text-align: left;
+            padding: .65rem 1.25rem;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #64748b;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+        tbody tr:hover { background: #f8fafc; }
+        tbody td { padding: .7rem 1.25rem; vertical-align: middle; }
+        .device-name { font-size: 13px; color: #64748b; }
+
+        /* ── Badge ── */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        /* ── Battery bar ── */
+        .battery-bar-wrap {
+            background: #e2e8f0;
+            border-radius: 4px;
+            height: 6px;
+            width: 80px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        .battery-bar {
+            height: 6px;
+            border-radius: 4px;
+            transition: width .3s;
+        }
+        .battery-pct { font-size: 13px; color: #475569; }
+
+        /* ── Anomalies ── */
+        .anomalies {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .anomalies h2 { font-size: 15px; font-weight: 600; margin-bottom: .5rem; }
+        .anomalies p  { font-size: 13px; color: #92400e; margin-bottom: .75rem; }
+        .anomalies ul { padding-left: 1.25rem; }
+        .anomalies li { font-size: 13px; color: #78350f; margin-bottom: 4px; }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+            padding: 1rem 0 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="header">
+    <h1>🛰️ SolidGPS — Fleet Dashboard</h1>
+    <div class="meta">33 devices &nbsp;·&nbsp; Generated 19 Jun 2026 05:19 UTC</div>
+</div>
+
+<div class="container">
+
+    <!-- ── SUMMARY CARDS ── -->
+    <div class="summary-grid">
+
+        <div class="summary-card" style="border-top: 4px solid #22c55e;">
+            <div class="summary-count" style="color:#22c55e;">10</div>
+            <div class="summary-label">Active</div>
+        </div>
+        <div class="summary-card" style="border-top: 4px solid #f59e0b;">
+            <div class="summary-count" style="color:#f59e0b;">6</div>
+            <div class="summary-label">Idle</div>
+        </div>
+        <div class="summary-card" style="border-top: 4px solid #ef4444;">
+            <div class="summary-count" style="color:#ef4444;">10</div>
+            <div class="summary-label">Offline</div>
+        </div>
+        <div class="summary-card" style="border-top: 4px solid #f97316;">
+            <div class="summary-count" style="color:#f97316;">6</div>
+            <div class="summary-label">Low Battery</div>
+        </div>
+        <div class="summary-card" style="border-top: 4px solid #8b5cf6;">
+            <div class="summary-count" style="color:#8b5cf6;">1</div>
+            <div class="summary-label">Maintenance</div>
+        </div>
+    </div>
+
+    <!-- ── MAP ── -->
+    <div class="map-wrap">
+        <div id="map"></div>
+    </div>
+
+    <!-- ── DEVICE TABLE ── -->
+    <div class="table-wrap">
+        <div class="table-header">Device List</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>Status</th>
+                    <th>Battery</th>
+                    <th>Last Seen</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody>
+
+        <tr>
+            <td><strong>TRK002</strong><br>
+                <span class="device-name">FastFreight Van 2</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:79%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">79%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Parramatta</td>
+        </tr>
+        <tr>
+            <td><strong>TRK005</strong><br>
+                <span class="device-name">SunRoute SUV 5</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:88%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">88%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Perth CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK015</strong><br>
+                <span class="device-name">PrimeLogistics SUV 15</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:36%; background:#f59e0b;"></div>
+                </div>
+                <span class="battery-pct">36%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Ballarat</td>
+        </tr>
+        <tr>
+            <td><strong>TRK018</strong><br>
+                <span class="device-name">FastFreight SUV 18</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:33%; background:#f59e0b;"></div>
+                </div>
+                <span class="battery-pct">33%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Perth CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK019</strong><br>
+                <span class="device-name">AusBuild Sedan 19</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:73%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">73%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Perth CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK021</strong><br>
+                <span class="device-name">CityFleet SUV 21</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:28%; background:#f59e0b;"></div>
+                </div>
+                <span class="battery-pct">28%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Fremantle</td>
+        </tr>
+        <tr>
+            <td><strong>TRK022</strong><br>
+                <span class="device-name">CityFleet SUV 22</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:24%; background:#f59e0b;"></div>
+                </div>
+                <span class="battery-pct">24%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Hobart CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK025</strong><br>
+                <span class="device-name">FastFreight SUV 25</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:81%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">81%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Penrith</td>
+        </tr>
+        <tr>
+            <td><strong>TRK026</strong><br>
+                <span class="device-name">CityFleet Truck 26</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:82%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">82%</span>
+            </td>
+            <td>55d ago</td>
+            <td>North Sydney</td>
+        </tr>
+        <tr>
+            <td><strong>TRK033</strong><br>
+                <span class="device-name">CityFleet Truck 33</span></td>
+            <td><span class="badge" style="background:#22c55e;">Active</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:100%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">100%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Melbourne CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK006</strong><br>
+                <span class="device-name">SunRoute Truck 6</span></td>
+            <td><span class="badge" style="background:#f59e0b;">Idle</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:62%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">62%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Perth CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK008</strong><br>
+                <span class="device-name">PrimeLogistics Ute 8</span></td>
+            <td><span class="badge" style="background:#f59e0b;">Idle</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:38%; background:#f59e0b;"></div>
+                </div>
+                <span class="battery-pct">38%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Wollongong</td>
+        </tr>
+        <tr>
+            <td><strong>TRK016</strong><br>
+                <span class="device-name">FastFreight Truck 16</span></td>
+            <td><span class="badge" style="background:#f59e0b;">Idle</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:68%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">68%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Ballarat</td>
+        </tr>
+        <tr>
+            <td><strong>TRK017</strong><br>
+                <span class="device-name">CityFleet Ute 17</span></td>
+            <td><span class="badge" style="background:#f59e0b;">Idle</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:99%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">99%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Sydney CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK028</strong><br>
+                <span class="device-name">SunRoute Sedan 28</span></td>
+            <td><span class="badge" style="background:#f59e0b;">Idle</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:45%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">45%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Ballarat</td>
+        </tr>
+        <tr>
+            <td><strong>TRK035</strong><br>
+                <span class="device-name">SunRoute SUV 35</span></td>
+            <td><span class="badge" style="background:#f59e0b;">Idle</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:0%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">0%</span>
+            </td>
+            <td>0s ago</td>
+            <td>Brisbane CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK007</strong><br>
+                <span class="device-name">CityFleet Ute 7</span></td>
+            <td><span class="badge" style="background:#f97316;">Low Battery</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:9%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">9%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Melbourne CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK009</strong><br>
+                <span class="device-name">CityFleet Truck 9</span></td>
+            <td><span class="badge" style="background:#f97316;">Low Battery</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:5%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">5%</span>
+            </td>
+            <td>55d ago</td>
+            <td>North Sydney</td>
+        </tr>
+        <tr>
+            <td><strong>TRK010</strong><br>
+                <span class="device-name">CityFleet Ute 10</span></td>
+            <td><span class="badge" style="background:#f97316;">Low Battery</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:7%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">7%</span>
+            </td>
+            <td>55d ago</td>
+            <td>North Sydney</td>
+        </tr>
+        <tr>
+            <td><strong>TRK012</strong><br>
+                <span class="device-name">PrimeLogistics Ute 12</span></td>
+            <td><span class="badge" style="background:#f97316;">Low Battery</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:2%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">2%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Central Coast</td>
+        </tr>
+        <tr>
+            <td><strong>TRK014</strong><br>
+                <span class="device-name">PrimeLogistics Sedan 14</span></td>
+            <td><span class="badge" style="background:#f97316;">Low Battery</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:1%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">1%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Central Coast</td>
+        </tr>
+        <tr>
+            <td><strong>TRK024</strong><br>
+                <span class="device-name">CityFleet Sedan 24</span></td>
+            <td><span class="badge" style="background:#f97316;">Low Battery</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:5%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">5%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Chatswood</td>
+        </tr>
+        <tr>
+            <td><strong>TRK032</strong><br>
+                <span class="device-name">FastFreight Van 32</span></td>
+            <td><span class="badge" style="background:#8b5cf6;">Maintenance</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:72%; background:#22c55e;"></div>
+                </div>
+                <span class="battery-pct">72%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Sydney CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK001</strong><br>
+                <span class="device-name">CityFleet SUV 1</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:1%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">1%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Parramatta</td>
+        </tr>
+        <tr>
+            <td><strong>TRK003</strong><br>
+                <span class="device-name">SunRoute Van 3</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:0%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">0%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Bondi Junction</td>
+        </tr>
+        <tr>
+            <td><strong>TRK004</strong><br>
+                <span class="device-name">PrimeLogistics Truck 4</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:0%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">0%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Parramatta</td>
+        </tr>
+        <tr>
+            <td><strong>TRK011</strong><br>
+                <span class="device-name">AusBuild Ute 11</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:4%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">4%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Fremantle</td>
+        </tr>
+        <tr>
+            <td><strong>TRK013</strong><br>
+                <span class="device-name">SunRoute Van 13</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:5%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">5%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Sydney CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK020</strong><br>
+                <span class="device-name">AusBuild Ute 20</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:0%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">0%</span>
+            </td>
+            <td>56d ago</td>
+            <td>North Sydney</td>
+        </tr>
+        <tr>
+            <td><strong>TRK023</strong><br>
+                <span class="device-name">PrimeLogistics Sedan 23</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:3%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">3%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Bondi Junction</td>
+        </tr>
+        <tr>
+            <td><strong>TRK027</strong><br>
+                <span class="device-name">FastFreight SUV 27</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:1%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">1%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Perth CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK029</strong><br>
+                <span class="device-name">FastFreight SUV 29</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:5%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">5%</span>
+            </td>
+            <td>55d ago</td>
+            <td>Sydney CBD</td>
+        </tr>
+        <tr>
+            <td><strong>TRK030</strong><br>
+                <span class="device-name">PrimeLogistics Truck 30</span></td>
+            <td><span class="badge" style="background:#ef4444;">Offline</span></td>
+            <td>
+                <div class="battery-bar-wrap">
+                    <div class="battery-bar" style="width:3%; background:#ef4444;"></div>
+                </div>
+                <span class="battery-pct">3%</span>
+            </td>
+            <td>56d ago</td>
+            <td>Geelong</td>
+        </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── ANOMALIES (only shown when dirty records exist) ── -->
+
+        <div class="anomalies">
+            <h2>⚠️ Data Anomalies (4 found)</h2>
+            <p>The following records had missing, invalid, or unexpected values.
+               They were either corrected automatically or skipped.</p>
+            <ul><li>Row 32 (TRK031): missing required fields: lat, lon — skipped.</li><li>TRK033 (CityFleet Truck 33): battery 150% exceeds 100 — clamped to 100.</li><li>TRK034: invalid coordinates (lat='not_a_lat', lon='153.0251') — skipped.</li><li>TRK035 (SunRoute SUV 35): battery -5% is below 0 — clamped to 0; last_seen '2027-06-15 14:00:00' is in the future — displayed as-is.</li></ul>
+        </div>
+
+</div>
+
+<div class="footer">
+    Fleet Dashboard · Generated 19 Jun 2026 05:19 UTC · SolidGPS
+</div>
+
+<!-- ── LEAFLET JS — loaded from CDN ── -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    // ── All device data injected directly from Python ──
+    // This means the HTML file is fully self-contained after generation.
+    const devices = [
+  {
+    "device_id": "TRK001",
+    "name": "CityFleet SUV 1",
+    "status": "offline",
+    "battery": 1,
+    "lat": -33.821841,
+    "lon": 151.002574,
+    "last_seen": "2026-04-23 18:32:00",
+    "last_seen_ago": "56d ago",
+    "location": "Parramatta",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK002",
+    "name": "FastFreight Van 2",
+    "status": "active",
+    "battery": 79,
+    "lat": -33.821625,
+    "lon": 151.000691,
+    "last_seen": "2026-04-24 08:59:00",
+    "last_seen_ago": "55d ago",
+    "location": "Parramatta",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK003",
+    "name": "SunRoute Van 3",
+    "status": "offline",
+    "battery": 0,
+    "lat": -33.884341,
+    "lon": 151.25109,
+    "last_seen": "2026-04-23 12:42:00",
+    "last_seen_ago": "56d ago",
+    "location": "Bondi Junction",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK004",
+    "name": "PrimeLogistics Truck 4",
+    "status": "offline",
+    "battery": 0,
+    "lat": -33.814093,
+    "lon": 150.996131,
+    "last_seen": "2026-04-24 00:28:00",
+    "last_seen_ago": "56d ago",
+    "location": "Parramatta",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK005",
+    "name": "SunRoute SUV 5",
+    "status": "active",
+    "battery": 88,
+    "lat": -31.945442,
+    "lon": 115.855392,
+    "last_seen": "2026-04-24 08:58:00",
+    "last_seen_ago": "55d ago",
+    "location": "Perth CBD",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK006",
+    "name": "SunRoute Truck 6",
+    "status": "idle",
+    "battery": 62,
+    "lat": -31.947106,
+    "lon": 115.86153,
+    "last_seen": "2026-04-24 08:49:00",
+    "last_seen_ago": "55d ago",
+    "location": "Perth CBD",
+    "colour": "#f59e0b"
+  },
+  {
+    "device_id": "TRK007",
+    "name": "CityFleet Ute 7",
+    "status": "low_battery",
+    "battery": 9,
+    "lat": -37.81415,
+    "lon": 144.969875,
+    "last_seen": "2026-04-24 08:57:00",
+    "last_seen_ago": "55d ago",
+    "location": "Melbourne CBD",
+    "colour": "#f97316"
+  },
+  {
+    "device_id": "TRK008",
+    "name": "PrimeLogistics Ute 8",
+    "status": "idle",
+    "battery": 38,
+    "lat": -34.43449,
+    "lon": 150.889904,
+    "last_seen": "2026-04-24 08:11:00",
+    "last_seen_ago": "55d ago",
+    "location": "Wollongong",
+    "colour": "#f59e0b"
+  },
+  {
+    "device_id": "TRK009",
+    "name": "CityFleet Truck 9",
+    "status": "low_battery",
+    "battery": 5,
+    "lat": -33.845111,
+    "lon": 151.20519,
+    "last_seen": "2026-04-24 08:56:00",
+    "last_seen_ago": "55d ago",
+    "location": "North Sydney",
+    "colour": "#f97316"
+  },
+  {
+    "device_id": "TRK010",
+    "name": "CityFleet Ute 10",
+    "status": "low_battery",
+    "battery": 7,
+    "lat": -33.834767,
+    "lon": 151.207668,
+    "last_seen": "2026-04-24 09:00:00",
+    "last_seen_ago": "55d ago",
+    "location": "North Sydney",
+    "colour": "#f97316"
+  },
+  {
+    "device_id": "TRK011",
+    "name": "AusBuild Ute 11",
+    "status": "offline",
+    "battery": 4,
+    "lat": -32.05215,
+    "lon": 115.7631,
+    "last_seen": "2026-04-23 15:03:00",
+    "last_seen_ago": "56d ago",
+    "location": "Fremantle",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK012",
+    "name": "PrimeLogistics Ute 12",
+    "status": "low_battery",
+    "battery": 2,
+    "lat": -33.418646,
+    "lon": 151.35029,
+    "last_seen": "2026-04-24 09:00:00",
+    "last_seen_ago": "55d ago",
+    "location": "Central Coast",
+    "colour": "#f97316"
+  },
+  {
+    "device_id": "TRK013",
+    "name": "SunRoute Van 13",
+    "status": "offline",
+    "battery": 5,
+    "lat": -33.86175,
+    "lon": 151.206987,
+    "last_seen": "2026-04-23 20:10:00",
+    "last_seen_ago": "56d ago",
+    "location": "Sydney CBD",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK014",
+    "name": "PrimeLogistics Sedan 14",
+    "status": "low_battery",
+    "battery": 1,
+    "lat": -33.426931,
+    "lon": 151.338362,
+    "last_seen": "2026-04-24 08:59:00",
+    "last_seen_ago": "55d ago",
+    "location": "Central Coast",
+    "colour": "#f97316"
+  },
+  {
+    "device_id": "TRK015",
+    "name": "PrimeLogistics SUV 15",
+    "status": "active",
+    "battery": 36,
+    "lat": -37.561409,
+    "lon": 143.856434,
+    "last_seen": "2026-04-24 08:57:00",
+    "last_seen_ago": "55d ago",
+    "location": "Ballarat",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK016",
+    "name": "FastFreight Truck 16",
+    "status": "idle",
+    "battery": 68,
+    "lat": -37.554876,
+    "lon": 143.844715,
+    "last_seen": "2026-04-24 08:33:00",
+    "last_seen_ago": "55d ago",
+    "location": "Ballarat",
+    "colour": "#f59e0b"
+  },
+  {
+    "device_id": "TRK017",
+    "name": "CityFleet Ute 17",
+    "status": "idle",
+    "battery": 99,
+    "lat": -33.869041,
+    "lon": 151.210726,
+    "last_seen": "2026-04-24 08:41:00",
+    "last_seen_ago": "55d ago",
+    "location": "Sydney CBD",
+    "colour": "#f59e0b"
+  },
+  {
+    "device_id": "TRK018",
+    "name": "FastFreight SUV 18",
+    "status": "active",
+    "battery": 33,
+    "lat": -31.952592,
+    "lon": 115.861561,
+    "last_seen": "2026-04-24 08:57:00",
+    "last_seen_ago": "55d ago",
+    "location": "Perth CBD",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK019",
+    "name": "AusBuild Sedan 19",
+    "status": "active",
+    "battery": 73,
+    "lat": -31.952222,
+    "lon": 115.858884,
+    "last_seen": "2026-04-24 08:55:00",
+    "last_seen_ago": "55d ago",
+    "location": "Perth CBD",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK020",
+    "name": "AusBuild Ute 20",
+    "status": "offline",
+    "battery": 0,
+    "lat": -33.831245,
+    "lon": 151.20555,
+    "last_seen": "2026-04-24 01:30:00",
+    "last_seen_ago": "56d ago",
+    "location": "North Sydney",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK021",
+    "name": "CityFleet SUV 21",
+    "status": "active",
+    "battery": 28,
+    "lat": -32.06248,
+    "lon": 115.763623,
+    "last_seen": "2026-04-24 09:00:00",
+    "last_seen_ago": "55d ago",
+    "location": "Fremantle",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK022",
+    "name": "CityFleet SUV 22",
+    "status": "active",
+    "battery": 24,
+    "lat": -42.88408,
+    "lon": 147.329351,
+    "last_seen": "2026-04-24 08:59:00",
+    "last_seen_ago": "55d ago",
+    "location": "Hobart CBD",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK023",
+    "name": "PrimeLogistics Sedan 23",
+    "status": "offline",
+    "battery": 3,
+    "lat": -33.885917,
+    "lon": 151.25689,
+    "last_seen": "2026-04-24 03:49:00",
+    "last_seen_ago": "56d ago",
+    "location": "Bondi Junction",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK024",
+    "name": "CityFleet Sedan 24",
+    "status": "low_battery",
+    "battery": 5,
+    "lat": -33.803265,
+    "lon": 151.180482,
+    "last_seen": "2026-04-24 09:00:00",
+    "last_seen_ago": "55d ago",
+    "location": "Chatswood",
+    "colour": "#f97316"
+  },
+  {
+    "device_id": "TRK025",
+    "name": "FastFreight SUV 25",
+    "status": "active",
+    "battery": 81,
+    "lat": -33.743784,
+    "lon": 150.694652,
+    "last_seen": "2026-04-24 09:00:00",
+    "last_seen_ago": "55d ago",
+    "location": "Penrith",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK026",
+    "name": "CityFleet Truck 26",
+    "status": "active",
+    "battery": 82,
+    "lat": -33.835861,
+    "lon": 151.202678,
+    "last_seen": "2026-04-24 08:58:00",
+    "last_seen_ago": "55d ago",
+    "location": "North Sydney",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK027",
+    "name": "FastFreight SUV 27",
+    "status": "offline",
+    "battery": 1,
+    "lat": -31.946035,
+    "lon": 115.857775,
+    "last_seen": "2026-04-23 13:50:00",
+    "last_seen_ago": "56d ago",
+    "location": "Perth CBD",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK028",
+    "name": "SunRoute Sedan 28",
+    "status": "idle",
+    "battery": 45,
+    "lat": -37.558362,
+    "lon": 143.845928,
+    "last_seen": "2026-04-24 08:03:00",
+    "last_seen_ago": "55d ago",
+    "location": "Ballarat",
+    "colour": "#f59e0b"
+  },
+  {
+    "device_id": "TRK029",
+    "name": "FastFreight SUV 29",
+    "status": "offline",
+    "battery": 5,
+    "lat": -33.864158,
+    "lon": 151.208856,
+    "last_seen": "2026-04-24 07:01:00",
+    "last_seen_ago": "55d ago",
+    "location": "Sydney CBD",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK030",
+    "name": "PrimeLogistics Truck 30",
+    "status": "offline",
+    "battery": 3,
+    "lat": -38.156611,
+    "lon": 144.355335,
+    "last_seen": "2026-04-23 20:05:00",
+    "last_seen_ago": "56d ago",
+    "location": "Geelong",
+    "colour": "#ef4444"
+  },
+  {
+    "device_id": "TRK032",
+    "name": "FastFreight Van 32",
+    "status": "maintenance",
+    "battery": 72,
+    "lat": -33.87,
+    "lon": 151.21,
+    "last_seen": "2026-04-24 07:30:00",
+    "last_seen_ago": "55d ago",
+    "location": "Sydney CBD",
+    "colour": "#8b5cf6"
+  },
+  {
+    "device_id": "TRK033",
+    "name": "CityFleet Truck 33",
+    "status": "active",
+    "battery": 100,
+    "lat": -37.814,
+    "lon": 144.963,
+    "last_seen": "2026-04-24 09:05:00",
+    "last_seen_ago": "55d ago",
+    "location": "Melbourne CBD",
+    "colour": "#22c55e"
+  },
+  {
+    "device_id": "TRK035",
+    "name": "SunRoute SUV 35",
+    "status": "idle",
+    "battery": 0,
+    "lat": -27.47,
+    "lon": 153.0255,
+    "last_seen": "2027-06-15 14:00:00",
+    "last_seen_ago": "0s ago",
+    "location": "Brisbane CBD",
+    "colour": "#f59e0b"
+  }
+];
+
+    // ── Colour map mirrors Python STATUS_COLOURS ──
+    const STATUS_COLOURS = {"active": "#22c55e", "idle": "#f59e0b", "offline": "#ef4444", "low_battery": "#f97316", "maintenance": "#8b5cf6", "unknown": "#6b7280"};
+
+    // ── Initialise map centred on Australia ──
+    const map = L.map('map').setView([-27.0, 134.0], 5);
+
+    // OpenStreetMap tiles — free, no API key required
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 18
+    }).addTo(map);
+
+    // ── Plot each device as a coloured circle marker ──
+    devices.forEach(function(device) {
+
+        // Circle colour comes from the device's status
+        const colour = STATUS_COLOURS[device.status] || '#6b7280';
+
+        const marker = L.circleMarker([device.lat, device.lon], {
+            radius:      9,
+            fillColor:   colour,
+            color:       '#fff',        // white border makes markers stand out on the map
+            weight:      2,
+            opacity:     1,
+            fillOpacity: 0.9
+        });
+
+        // Popup shown when the marker is clicked
+        marker.bindPopup(`
+            <strong>${device.name}</strong><br>
+            <span style="color:${colour};">● ${device.status.replace('_',' ')}</span><br>
+            Battery: ${device.battery}%<br>
+            Last seen: ${device.last_seen_ago}<br>
+            Location: ${device.location}
+        `);
+
+        marker.addTo(map);
+    });
+</script>
+
+</body>
+</html>
