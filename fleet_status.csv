@@ -1,0 +1,36 @@
+device_id,name,status,battery_pct,lat,lon,last_seen,location
+TRK001,CityFleet SUV 1,offline,1,-33.821841,151.002574,2026-04-23 18:32:00,Parramatta
+TRK002,FastFreight Van 2,active,79,-33.821625,151.000691,2026-04-24 08:59:00,Parramatta
+TRK003,SunRoute Van 3,offline,0,-33.884341,151.25109,2026-04-23 12:42:00,Bondi Junction
+TRK004,PrimeLogistics Truck 4,offline,0,-33.814093,150.996131,2026-04-24 00:28:00,Parramatta
+TRK005,SunRoute SUV 5,active,88,-31.945442,115.855392,2026-04-24 08:58:00,Perth CBD
+TRK006,SunRoute Truck 6,idle,62,-31.947106,115.86153,2026-04-24 08:49:00,Perth CBD
+TRK007,CityFleet Ute 7,low_battery,9,-37.81415,144.969875,2026-04-24 08:57:00,Melbourne CBD
+TRK008,PrimeLogistics Ute 8,idle,38,-34.43449,150.889904,2026-04-24 08:11:00,Wollongong
+TRK009,CityFleet Truck 9,low_battery,5,-33.845111,151.20519,2026-04-24 08:56:00,North Sydney
+TRK010,CityFleet Ute 10,low_battery,7,-33.834767,151.207668,2026-04-24 09:00:00,North Sydney
+TRK011,AusBuild Ute 11,offline,4,-32.05215,115.7631,2026-04-23 15:03:00,Fremantle
+TRK012,PrimeLogistics Ute 12,low_battery,2,-33.418646,151.35029,2026-04-24 09:00:00,Central Coast
+TRK013,SunRoute Van 13,offline,5,-33.86175,151.206987,2026-04-23 20:10:00,Sydney CBD
+TRK014,PrimeLogistics Sedan 14,low_battery,1,-33.426931,151.338362,2026-04-24 08:59:00,Central Coast
+TRK015,PrimeLogistics SUV 15,active,36,-37.561409,143.856434,2026-04-24 08:57:00,Ballarat
+TRK016,FastFreight Truck 16,idle,68,-37.554876,143.844715,2026-04-24 08:33:00,Ballarat
+TRK017,CityFleet Ute 17,idle,99,-33.869041,151.210726,2026-04-24 08:41:00,Sydney CBD
+TRK018,FastFreight SUV 18,active,33,-31.952592,115.861561,2026-04-24 08:57:00,Perth CBD
+TRK019,AusBuild Sedan 19,active,73,-31.952222,115.858884,2026-04-24 08:55:00,Perth CBD
+TRK020,AusBuild Ute 20,offline,0,-33.831245,151.20555,2026-04-24 01:30:00,North Sydney
+TRK021,CityFleet SUV 21,active,28,-32.06248,115.763623,2026-04-24 09:00:00,Fremantle
+TRK022,CityFleet SUV 22,active,24,-42.88408,147.329351,2026-04-24 08:59:00,Hobart CBD
+TRK023,PrimeLogistics Sedan 23,offline,3,-33.885917,151.25689,2026-04-24 03:49:00,Bondi Junction
+TRK024,CityFleet Sedan 24,low_battery,5,-33.803265,151.180482,2026-04-24 09:00:00,Chatswood
+TRK025,FastFreight SUV 25,active,81,-33.743784,150.694652,2026-04-24 09:00:00,Penrith
+TRK026,CityFleet Truck 26,active,82,-33.835861,151.202678,2026-04-24 08:58:00,North Sydney
+TRK027,FastFreight SUV 27,offline,1,-31.946035,115.857775,2026-04-23 13:50:00,Perth CBD
+TRK028,SunRoute Sedan 28,idle,45,-37.558362,143.845928,2026-04-24 08:03:00,Ballarat
+TRK029,FastFreight SUV 29,offline,5,-33.864158,151.208856,2026-04-24 07:01:00,Sydney CBD
+TRK030,PrimeLogistics Truck 30,offline,3,-38.156611,144.355335,2026-04-23 20:05:00,Geelong
+TRK031,,active,,,,2026-04-24 08:45:00,Perth CBD
+TRK032,FastFreight Van 32,maintenance,72,-33.8700,151.2100,2026-04-24 07:30:00,Sydney CBD
+TRK033,CityFleet Truck 33,active,150,-37.8140,144.9630,2026-04-24 09:05:00,Melbourne CBD
+TRK034,AusBuild Ute 34,offline,12,not_a_lat,153.0251,2026-04-24 06:00:00,Brisbane CBD
+TRK035,SunRoute SUV 35,idle,-5,-27.4700,153.0255,2027-06-15 14:00:00,Brisbane CBD
